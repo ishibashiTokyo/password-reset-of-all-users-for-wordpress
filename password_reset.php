@@ -2,6 +2,7 @@
 define('PASSWD_LENGTH', 32);// パスワード長
 define('SP_CHAR_MIN', 3);// 特殊文字数の最小値
 define('SP_CHARS', '!@#$%^&*()');// 特殊文字一覧
+define('SEND_MAIL', false);// パスワード変更の通知メールを送信するかどうか
 
 // WordPress用パスワード変更処理
 if (file_exists(__DIR__ . '/wp-load.php')) {
@@ -11,7 +12,12 @@ if (file_exists(__DIR__ . '/wp-load.php')) {
     foreach($users as $user){
         $password_raw = wordpress_GeneratePassword();
 
-        $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_pass' => $password_raw ) );
+        if (SEND_MAIL) {
+            $user_id = wp_update_user( array( 'ID' => $user->ID, 'user_pass' => $password_raw ) );
+        }
+        else {
+            $user_id = wp_insert_user( array( 'ID' => $user->ID, 'user_pass' => $password_raw ) );
+        }
 
         if ( is_wp_error( $user_id ) ) {
             printf('[Error] User ID: %s<br>' . PHP_EOL, $user_id);
@@ -33,7 +39,7 @@ if (file_exists(__DIR__ . '/wp-load.php')) {
  */
 function wordpress_GeneratePassword() {
     $sp_char_count = 0;
-    $_password = wp_generate_password( $length = 32, $special_chars = true, $extra_special_chars = false );
+    $_password = wp_generate_password($length = PASSWD_LENGTH, $special_chars = true, $extra_special_chars = false);
 
     foreach (str_split(SP_CHARS) as $char) {
         $sp_char_count += substr_count($_password, $char);
